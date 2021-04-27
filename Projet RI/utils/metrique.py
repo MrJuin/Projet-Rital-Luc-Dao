@@ -48,6 +48,7 @@ class EvalIRModel:
             query = col_q[keys[i]]
             i+=1
             if len(query.pertinents) == 0: # pas de pertinents, courbe inutile
+                print("requete",keys[i],"=> pas de pertinents disponibles")    
                 continue
             
             q = pretraitement_requete(query.text)
@@ -176,20 +177,21 @@ class NDCG(EvalMesure):
                 ))
         #r = np.where(np.isin(liste, query.pertinents),1,0)
         DCG =  r[0] + np.sum(r[1:] / np.log2(np.arange(2,len(r)+1)))
-        
-        i = np.ones(len(query.pertinents))
-        
+        i = sorted(list(query.pertinents_score.values()),reverse=True)
         IDCG = i[0] + np.sum(i[1:] / np.log2(np.arange(2,len(i)+1)))
         return DCG/IDCG
     
 class Précision_interpolée(EvalMesure):
     def evalQuery(liste,query,args = None):
+        """
+            Renvoie 2 listes avec pts les precisions et values les rappels associés
+        """
         p = np.array(Précision.allEvalQuery(liste,query))
 
         r = np.array(Rappel.allEvalQuery(liste,query))
-        pts,ids = np.unique(p,return_index=True)
+        pts,ids = np.unique(r,return_index=True)
         values = []
         for i in ids:
-            v = p[i]
-            values+=[np.max(r[np.where(p>=v)[0]])]
+            v = r[i]
+            values+=[np.max(p[np.where(r>=v)[0]])]
         return pts,values

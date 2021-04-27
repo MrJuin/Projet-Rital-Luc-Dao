@@ -20,9 +20,14 @@ Il existe 2 fichiers de tests :
 - test_modeles.py qui test la cohérence des résultats obtenus dans l'application réel en affichant la requète avec le meilleurs score pour une query avec les différents models.  
 Nous utilisons aussi ces tests pour verifier la rapidité du ranking (il est de l'ordre de 0.1 seconde, ce qui est très bon).
 - test_modeles_results.py qui vérifie les résultats obtenues sur une collection réduite et une query prédéfinie.  
-Nous avons réalisé de plus réalisé le bonus pour obtenir les meilleurs paramètres de nos modèles.  
+Nous avons de plus réalisé le bonus pour obtenir les meilleurs paramètres de nos modèles dans le fichier bonus.  
 ## TME3-Evaluation
-
+Les évaluations sont codés dans le fichier metrique.py.   
+Les mesures Précision, Rappel, F-measure au rang k, ndcg, reciprocal rank et précision moyenne ont été implémenter.  
+De plus nous avons implémenté une méthode pour afficher la precision interpolée pour des requètes (precision_interpolée_graph).  
+Nous avons aussi réalisé un bonus en implémentant un test de significativité entre 2 modèles.  
+Le fichier test_metriques.py permet de tester les différents algorithmes mis en oeuvre.   
+De plus nous avons testé les résultats des métriques dans le fichier test_metriques_results.py.  
 ## TME4-Algorithme de PageRank
 ## Répartition du travail
 TME1-Indexation Code : Luc STERKERS - Dao THAUVIN   
