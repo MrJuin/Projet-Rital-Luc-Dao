@@ -1,4 +1,4 @@
-# Projet TAL
+# Projet RI
 ## Introduction
 Il s'agit ici d'un court résumé de ce qui a été fait dans les différents TMEs et les tests réalisés.  
 ## TME1-Indexation
@@ -15,7 +15,7 @@ En effet si un mot apparaissait sous 2 formes différentes mais avec un même st
 ## TME2-Appariement
 Les modèles sont codés dans le code modeles.py et les weighters dans le code weighters.py, 
 la totalité des modèles sont opérationnels.  
-Le modèle de langue est inspiré du code [ici](https://github.com/prdx/RetrievalModels/tree/master/models) (on passe le modèle au log ici).
+Le modèle de langue est inspiré du code [ici](https://github.com/prdx/RetrievalModels/tree/master/models) (on passe le modèle au log ici).  
 Il existe 2 fichiers de tests :  
 - test_modeles.py qui test la cohérence des résultats obtenus dans l'application réel en affichant la requète avec le meilleurs score pour une query avec les différents models.  
 Nous utilisons aussi ces tests pour verifier la rapidité du ranking (il est de l'ordre de 0.1 seconde, ce qui est très bon).
