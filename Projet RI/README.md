@@ -20,7 +20,10 @@ Il existe 2 fichiers de tests :
 - test_modeles.py qui test la cohérence des résultats obtenus dans l'application réel en affichant la requète avec le meilleurs score pour une query avec les différents models.  
 Nous utilisons aussi ces tests pour verifier la rapidité du ranking (il est de l'ordre de 0.1 seconde, ce qui est très bon).
 - test_modeles_results.py qui vérifie les résultats obtenues sur une collection réduite et une query prédéfinie.  
-Nous avons de plus réalisé le bonus pour obtenir les meilleurs paramètres de nos modèles dans le fichier bonus.  
+Nous avons de plus réalisé le bonus pour obtenir les meilleurs paramètres de nos modèles dans le fichier bonus.py.  
+Nous réalisons 3 folds en essayant de maximiser la MAP.  
+- Le modèle de Langue à une MAP optimale en moyenne de 0.43 sur les folds avec comme meilleur paramètre lambda de 0.9  
+- Le modèle Okapi à une MAP optimale en moyenne de 0.43 aussi sur les folds avec comme meilleurs paramètres k1 de 1.6 et b de 1  
 ## TME3-Evaluation
 Les évaluations sont codés dans le fichier metrique.py.   
 Les mesures Précision, Rappel, F-measure au rang k, ndcg, reciprocal rank et précision moyenne ont été implémenter.  
