@@ -27,10 +27,9 @@ class Equilibrage:
         '''
             renvoies datax et datay équilibrés
         '''
-        datax = np.array(datax)
+        # datax = np.array(datax)
         datay = np.array(datay)
         v,nb = np.unique(datay,return_counts=True)
-        
         diff = np.abs(nb[0]-nb[1]) - marge
     
         if diff <= 0: return datax,datay
@@ -40,8 +39,6 @@ class Equilibrage:
         else:
             indices = np.where(datay==v[1])[0]
         to_remove = np.random.choice(indices,diff,replace=False)
-        print(to_remove)
-        print(datax.shape)
-        datax = np.delete(datax,to_remove)
-        datay = np.delete(datay,to_remove)
-        return datax,datay
+        datax = datax[[x for x in range(datax.shape[0]) if x not in to_remove]]
+        datay = np.delete(datay,to_remove,axis=0)
+        

@@ -9,80 +9,105 @@ from sklearn import svm
 from sklearn import linear_model as lin
 import numpy as np
 from utils.equilibrage import Equilibrage
-
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import cross_validate
+from nltk.corpus import stopwords
+from sklearn.model_selection import StratifiedKFold
+from utils.scoring import get_vectorizer, get_classifieur
+                         
+#%%
 fname = "Data/AFDpresidentutf8/corpus.tache1.learn.utf8"
 alltxts,alllabs = Loader.load_pres(fname)
+alllabs = np.array(alllabs)
+
+
+stop = list(stopwords.words('french'))
 
 # parametres de la meilleur solution
 params = {
     "lowercase":False,
-    "punct":"separe",
-    "marker":False,
+    "punct":True,
     "number":True,
-    "stemming":False,
-    "strip_accents":False,
-    "stopwords": None
+    "stemming":False, #,Preprocessing.stem],
+    # "ligne": [None,-2,0],
+    "strip_accents":True, # 
+    "stopwords": stop, # set(STOPWORDS)],
+    "Vectorizer": CountVectorizer,
+    "binary": True,
+    # "class_weight": "balanced",
+    "max_features": None,
+    "ngram_range" : (1,2), # (1,1),
+    # "max_df" : 0.005, # 0.02
+    # "min_df" : 1,# 5
+    "clf" : svm.LinearSVC
 }
 
-clf = svm.LinearSVC()
 
-f = lambda x: Preprocessing.preprocessing(x,params)
-vectorizer = CountVectorizer(preprocessor = f,lowercase=False,token_pattern = Preprocessing.token_pattern)
+
+vectorizer = get_vectorizer(params)
+
 X = vectorizer.fit_transform(alltxts)
 
+#%%
+# cross validation sans équilibrage en entrainement
 
-# train test split sans équilibrage
-X_train, X_test, y_train, y_test = train_test_split( X, alllabs, test_size=0.4, random_state=0) 
-clf.fit(X_train, y_train)
-res = clf.predict(X_test)
-print(clf.score(X_test,y_test))
-print(np.unique(res,return_counts=True))
+scoring = {'accuracy' : accuracy_score, # make_scorer(accuracy_score), 
+           'precision' : precision_score, #make_scorer(precision_score),
+           'recall' : recall_score, #make_scorer(recall_score), 
+           'f1_score' : f1_score} #make_scorer(f1_score)}
 
-
-# train test split avec équilibrage
-to_keep = Equilibrage.remove_prioritaire_2(y_test)
-res = clf.predict(X_test[to_keep])
-
-y_test = np.array(y_test)
-print(clf.score(X_test[to_keep],y_test[to_keep]))
-print(np.unique(res,return_counts=True))
-
-# cross validation sans équilibrage
-from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import cross_validate
-
-scoring = {'accuracy' : make_scorer(accuracy_score), 
-           'precision' : make_scorer(precision_score),
-           'recall' : make_scorer(recall_score), 
-           'f1_score' : make_scorer(f1_score)}
-
+res_cross = dict()
+folds = StratifiedKFold(n_splits = 5)
+for train, test in folds.split(X, alllabs):
+    clf = get_classifieur(params,alltxts,alllabs)
+    X_test, Y_test = Equilibrage.remove_prioritaire(X[test],alllabs[test],marge=0)
+    clf.fit(X[train],alllabs[train])
+    res = clf.predict(X_test)
+    for score, element in scoring.items():
+        try:
+            res_cross[score] += [element(Y_test,res)]
+        except KeyError:
+            res_cross[score] = [element(Y_test,res)]
+    
+    
+"""
 res_cross = cross_validate( clf, X, alllabs, cv=5,scoring=scoring)
+"""
 for score,scores in res_cross.items():
-    print(score,":",scores.mean())
+    print(score,":",np.array(scores).mean())
+
+
+#%%
+# cross validation avec équilibrage en entrainement
+
+params["class_weight"] = "balanced" # dict({1:0.1,-1:0.9})
+
+scoring = {'accuracy' : accuracy_score, # make_scorer(accuracy_score), 
+           'precision' : precision_score, #make_scorer(precision_score),
+           'recall' : recall_score, #make_scorer(recall_score), 
+           'f1_score' : f1_score} #make_scorer(f1_score)}
+
+res_cross = dict()
+folds = StratifiedKFold(n_splits = 5)
+for train, test in folds.split(X, alllabs):
+    clf = get_classifieur(params,alltxts,alllabs)
+    X_train, Y_train = Equilibrage.remove_prioritaire(X[train],alllabs[train],marge=0)
+    X_test, Y_test = Equilibrage.remove_prioritaire(X[test],alllabs[test],marge=0)
+    print("from", X[train].shape[0], "to", X_train.shape[0])
+    clf.fit(X_train,Y_train)
     
-datax, datay = Equilibrage.remove_prioritaire(alltxts,alllabs)
-
-
-f = lambda x: Preprocessing.preprocessing(x,params)
-vectorizer = CountVectorizer(preprocessor = f,lowercase=False,token_pattern = Preprocessing.token_pattern)
-X = vectorizer.fit_transform(datax)
-
-# cross validation avec équilibrage
-from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import cross_validate
-
-scoring = {'accuracy' : make_scorer(accuracy_score), 
-           'precision' : make_scorer(precision_score),
-           'recall' : make_scorer(recall_score), 
-           'f1_score' : make_scorer(f1_score)}
-
-res_cross = cross_validate( clf, X, datay, cv=5,scoring=scoring)
+    res = clf.predict(X_test)
+    for score, element in scoring.items():
+        try:
+            res_cross[score] += [element(Y_test,res)]
+        except KeyError:
+            res_cross[score] = [element(Y_test,res)]
+    
+    
+"""
+res_cross = cross_validate( clf, X, alllabs, cv=5,scoring=scoring)
+"""
 for score,scores in res_cross.items():
-    print(score,":",scores.mean())
-    
-# train_test_split avec equilibrage
-X_train_2, X_test_2, y_train_2, y_test_2 = train_test_split( X, datay, test_size=0.4, random_state=0) 
-clf.fit(X_train_2, y_train_2)
-res = clf.predict(X_test_2)
-print(np.unique(res,return_counts=True))
-print(clf.score(X_test_2,y_test_2))
+    print(score,":",np.array(scores).mean())
+
+params["class_weight"] = None

@@ -11,6 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 import pickle
 import numpy as np
 import sklearn.naive_bayes as nb
+from utils.equilibrage import Equilibrage
 
 def kFold_scores(X,alllabs,clf,nb_splits = 2):
     scores = []
@@ -27,7 +28,30 @@ def kFold_scores(X,alllabs,clf,nb_splits = 2):
         scores += [clf.score(X_test,y_test)]
     return scores
 
-def gridSearch(datax,datay,params,stock = False):
+def get_vectorizer(current_params):
+    f = lambda x: Preprocessing.preprocessing(x,current_params)
+    Vectorizer = current_params.get("Vectorizer",CountVectorizer)
+    vectorizer = Vectorizer(preprocessor = f,lowercase=False,
+                                token_pattern = Preprocessing.token_pattern, 
+                                binary = current_params.get("binary",False), 
+                                max_df = current_params.get("max_df",1),
+                                min_df = current_params.get("min_df",1),
+                                ngram_range = current_params.get("ngram_range",(1,1)),
+                                max_features = current_params.get("max_features",None))
+    return vectorizer
+
+def get_classifieur(current_params,datax,datay):
+    clf_class = current_params.get("clf",svm.LinearSVC)
+    if clf_class == nb.MultinomialNB:
+        class_prior = current_params.get("class_weight",None)
+        if class_prior == "balanced":   
+            class_prior = len(datax) / (2 * np.bincount(np.where(np.array(datay) == 1,1,0)))
+        return clf_class(class_prior = class_prior, max_iter=5000)
+    else:
+        return clf_class(class_weight = current_params.get("class_weight",None), max_iter = 5000)
+    
+
+def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilibrage_train = False):
     '''
     Parameters
     ----------
@@ -39,7 +63,8 @@ def gridSearch(datax,datay,params,stock = False):
         Classifieur à utiliser.
     params
         Dictionnaire des parametres.
-
+    equilibre 
+        Si vrai équilibre les données en test
     Returns
     -------
     res_train 
@@ -48,6 +73,7 @@ def gridSearch(datax,datay,params,stock = False):
         Dictionnaire des F1-score en train en fonction des différents parametres..
 
     '''
+    datay = np.array(datay)
     el = params.keys()
  
     res_test = dict()
@@ -60,39 +86,41 @@ def gridSearch(datax,datay,params,stock = False):
         current_params = dict(zip(el,v))
         
         # choix du classifieur
-        clf_class = current_params.get("clf",svm.LinearSVC)
-        if clf_class == nb.MultinomialNB:
-            class_prior = current_params.get("class_weight",None)
-            if class_prior == "balanced":   
-                class_prior = len(datax) / (2 * np.bincount(np.where(np.array(datay) == 1,1,0)))
-                print(class_prior)
-            clf = clf_class(class_prior = class_prior)
-        else:
-            clf = clf_class(class_weight = current_params.get("class_weight",None))
+        clf = get_classifieur(current_params,datax,datay)
+       
         # choix du vectorizer
-        Vectorizer = current_params.get("Vectorizer",CountVectorizer)
-        # application des parametres au preprocessing
-        f = lambda x: Preprocessing.preprocessing(x,current_params)
+        vectorizer = get_vectorizer(current_params)
         
-        # Vectorization
-        print( current_params.get("max_df",1),current_params.get("min_df",1))
-        vectorizer = Vectorizer(preprocessor = f,lowercase=False,
-                                token_pattern = Preprocessing.token_pattern, 
-                                binary = current_params.get("binary",False), 
-                                max_df = current_params.get("max_df",1),
-                                min_df = current_params.get("min_df",1),
-                                ngram_range = current_params.get("ngram_range",(1,1)),
-                                max_features = current_params.get("max_features",None))
         X = vectorizer.fit_transform(datax)
-        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=0.4, random_state=0) 
+        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=0.5, stratify = datay) 
+
+        if equilibrage_test:
+            X_test, y_test = Equilibrage.remove_prioritaire(X_test,y_test)
+        if equilibrage_train:
+            X_train, y_train = Equilibrage.remove_prioritaire(X_train,y_train,marge = 0)
+       
+        print("size train",X_train.shape[0],len(y_train))
+        print("size test",X_test.shape[0],len(y_test))
+        print("nb -1 in train : ",len(np.where(y_train == -1)[0]))
+        print("nb 1 in train : ",len(np.where(y_train == 1)[0]))
+        print("nb -1 in test : ",len(np.where(y_test == -1)[0]))
+        print("nb 1 in test : ",len(np.where(y_test == 1)[0]))
         clf.fit(X_train, y_train)
+        
+        
         # Application 
-        yhat_test = clf.predict(X_test)
         yhat_train = clf.predict(X_train)
+        yhat_test = clf.predict(X_test)
+       
+        print("nb -1 in train predicted : ",len(np.where(yhat_train == -1)[0]))
+        print("nb 1 in train predicted : ",len(np.where(yhat_train == 1)[0]))
+        print("nb -1 in test predicted : ",len(np.where(yhat_test == -1)[0]))
+        print("nb 1 in test predicted : ",len(np.where(yhat_test == 1)[0]))
         
         res_test[tag] = f1_score(y_test,yhat_test)
         res_train[tag] = f1_score(y_train,yhat_train)
-        print(res_test[tag])
+        print("train:",res_train[tag])
+        print("test",res_test[tag])
     if stock:
         pickle.dump(res_train,open("train","wb"))
         pickle.dump(res_test,open("test","wb"))

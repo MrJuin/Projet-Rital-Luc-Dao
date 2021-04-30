@@ -13,27 +13,29 @@ from nltk.corpus import stopwords
 fname = "Data/AFDpresidentutf8/corpus.tache1.learn.utf8"
 train_x,train_y = Loader.load_pres(fname)
 
-stop = list(stopwords.words('french')) + ['cet', 'cette', 'là']
+stop = list(stopwords.words('french')) # + ['cet', 'cette', 'là']
 params = {
-    "lowercase":True,
-    "punct":True,
-    "marker":True,
-    "number":True,
-    "stemming": Preprocessing.lem, #stemmer.stem,
+    "lowercase":False,
+    "punct":False,
+    "marker":False,
+    "number":False,
+    "stemming": Preprocessing.lem, # Preprocessing.stem,
     "ligne": None,
-    "strip_accents":True,
-    "stopwords": set(stop)
+    "strip_accents":False,
+    "stopwords": stop # set(stop)
 }
 f = lambda x: Preprocessing.preprocessing(x,params)
 #%%
-datax_tr = list(map(f, train_x))
 
-vectorizer = CountVectorizer(preprocessor = None,lowercase=False,token_pattern = Preprocessing.token_pattern)
+
+vectorizer = CountVectorizer(preprocessor = f,lowercase=False,token_pattern = Preprocessing.token_pattern)
 t = time() ; X = vectorizer.fit_transform(train_x); print(time() - t)
 print("nombres de mots différents :",len(vectorizer.get_feature_names()))
 print("nombre de mots :",X.sum())
 
 #%%
+datax_tr = list(map(f, train_x))
+
 # word cloud des frequences
 def wcloud(x):
     wordcloud_base = WordCloud(width = 800  , height = 800 , background_color ='white',\
@@ -45,7 +47,18 @@ def wcloud(x):
     plt.figure(figsize = (8, 8), facecolor = None) 
     plt.imshow(wordcloud) ; plt.axis("off") ; plt.tight_layout(pad = 0)
     plt.show()
+    return wordcloud
 
+wordcloud = wcloud(datax_tr)
+
+# Distribution des mots selon les étiquettes
+chi_x = np.array(datax_tr)[np.where(np.array(train_y) ==  1)[0]]
+wcloud(chi_x)
+
+mit_x = np.array(datax_tr)[np.where(np.array(train_y) == -1)[0]] 
+wcloud(mit_x)
+
+#%% 
 # oddsratio cloud
 def oddsratiocloud(x,y):
     datax = []; datay = []
@@ -64,27 +77,14 @@ def oddsratiocloud(x,y):
                          lambd = 10e-3)
     
     res, res_2 = cloud.init(1)
-    res, res_2 = cloud.init(-1)
-#%% Distribution des mots selon les étiquettes
-chi_x = np.array(datax_tr)[np.where(np.array(train_y) ==  1)[0]]
-wcloud(chi_x)
-
-mit_x = np.array(datax_tr)[np.where(np.array(train_y) == -1)[0]] 
-wcloud(mit_x)
-
+    res, res_2 = cloud.init(-1)            
+    
 oddsratiocloud(datax_tr, train_y)
+
+#%%
 # distribution d'apparitions des mots
-#%% Distribution sans stemming
-chi_x = np.array(train_x)[np.where(np.array(train_y) ==  1)[0]]
-wcloud(chi_x)
-
-mit_x = np.array(train_x)[np.where(np.array(train_y) == -1)[0]] 
-wcloud(mit_x)
-
-oddsratiocloud(train_x, train_y)
-"""
 res = dict()
-for phrase in train_x:
+for phrase in datax_tr:
     mots = phrase.split(" ")
     for mot in mots:
         try:
@@ -95,4 +95,3 @@ for phrase in train_x:
 plt.figure(figsize=(20,10))
 plt.plot(list(res.values()))
 plt.show()
-"""

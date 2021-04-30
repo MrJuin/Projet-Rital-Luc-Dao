@@ -6,7 +6,9 @@ from utils.utils import Loader
 
 fname = "Data/AFDpresidentutf8/corpus.tache1.learn.utf8"
 alltxts,alllabs = Loader.load_pres(fname)
-
+alllabs = np.array(alllabs)
+alltxts = np.array(alltxts)
+#%%
 datax, datay = Equilibrage.remove_prioritaire(alltxts,alllabs)
 
 [ind1,ind2] = np.unique(datay)
