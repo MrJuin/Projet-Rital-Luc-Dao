@@ -45,10 +45,10 @@ def get_classifieur(current_params,datax,datay):
     if clf_class == nb.MultinomialNB:
         class_prior = current_params.get("class_weight",None)
         if class_prior == "balanced":   
-            class_prior = len(datax) / (2 * np.bincount(np.where(np.array(datay) == 1,1,0)))
-        return clf_class(class_prior = class_prior, max_iter=5000)
+            class_prior = datax.shape[0] / (2 * np.bincount(np.where(datay == 1,1,0)))
+        return clf_class(class_prior = class_prior, fit_prior = True)
     else:
-        return clf_class(class_weight = current_params.get("class_weight",None), max_iter = 5000)
+        return clf_class(class_weight = current_params.get("class_weight",None), max_iter = 1000)
     
 
 def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilibrage_train = False):
@@ -81,7 +81,7 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
     size = len(list(itertools.product(*params.values())))
     for i,v in enumerate(list(itertools.product(*params.values()))):
         print(i+1,"on",size)
-        tag = tuple(x if isinstance(x, collections.Hashable) else "YES" for x in v)
+        tag = tuple(x if isinstance(x, collections.Hashable) else (str(x) if len(x) == 2 else "YES") for x in v)
         print(tag)
         current_params = dict(zip(el,v))
         
@@ -92,13 +92,11 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         vectorizer = get_vectorizer(current_params)
         
         X = vectorizer.fit_transform(datax)
-        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=0.5, stratify = datay) 
+        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=0.2, stratify = datay) 
 
         if equilibrage_test:
-            X_test, y_test = Equilibrage.remove_prioritaire(X_test,y_test)
-        if equilibrage_train:
-            X_train, y_train = Equilibrage.remove_prioritaire(X_train,y_train,marge = 0)
-       
+            X_test, y_test = Equilibrage.equilibrate_court(X_test,y_test,f1=1,f2=None)
+            
         print("size train",X_train.shape[0],len(y_train))
         print("size test",X_test.shape[0],len(y_test))
         print("nb -1 in train : ",len(np.where(y_train == -1)[0]))
@@ -119,7 +117,7 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         
         res_test[tag] = f1_score(y_test,yhat_test)
         res_train[tag] = f1_score(y_train,yhat_train)
-        print("train:",res_train[tag])
+        print("train",res_train[tag])
         print("test",res_test[tag])
     if stock:
         pickle.dump(res_train,open("train","wb"))
