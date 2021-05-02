@@ -128,6 +128,6 @@ class OddsRatioCloud:
         res = self._get_result(dictio_total,dictio_yplus,dictio_ymoins,total)
         res_2 = self._get_result(dictio_total_bi,dictio_yplus_bi,dictio_ymoins_bi,total)
         if print_res:
-            res_final = res  # +res_2
+            res_final = res +res_2
             self.print_res(res_final)
         return res, res_2

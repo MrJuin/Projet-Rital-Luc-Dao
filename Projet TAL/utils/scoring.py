@@ -41,6 +41,7 @@ def get_vectorizer(current_params):
     return vectorizer
 
 def get_classifieur(current_params,datax,datay):
+    nb_iter = 5000
     clf_class = current_params.get("clf",svm.LinearSVC)
     if clf_class == nb.MultinomialNB:
         class_prior = current_params.get("class_weight",None)
@@ -48,10 +49,10 @@ def get_classifieur(current_params,datax,datay):
             class_prior = datax.shape[0] / (2 * np.bincount(np.where(datay == 1,1,0)))
         return clf_class(class_prior = class_prior, fit_prior = True)
     else:
-        return clf_class(class_weight = current_params.get("class_weight",None), max_iter = 1000)
+        return clf_class(class_weight = current_params.get("class_weight",None), max_iter = nb_iter)
     
 
-def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilibrage_train = False):
+def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilibrage_train = False,test_size=0.2, stratified = True):
     '''
     Parameters
     ----------
@@ -92,29 +93,28 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         vectorizer = get_vectorizer(current_params)
         
         X = vectorizer.fit_transform(datax)
-        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=0.2, stratify = datay) 
+        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=test_size, stratify = datay if stratified else None) 
 
         if equilibrage_test:
             X_test, y_test = Equilibrage.equilibrate_court(X_test,y_test,f1=1,f2=None)
-            
-        print("size train",X_train.shape[0],len(y_train))
-        print("size test",X_test.shape[0],len(y_test))
+        """
         print("nb -1 in train : ",len(np.where(y_train == -1)[0]))
         print("nb 1 in train : ",len(np.where(y_train == 1)[0]))
         print("nb -1 in test : ",len(np.where(y_test == -1)[0]))
         print("nb 1 in test : ",len(np.where(y_test == 1)[0]))
+        """
         clf.fit(X_train, y_train)
         
         
         # Application 
         yhat_train = clf.predict(X_train)
         yhat_test = clf.predict(X_test)
-       
+        """
         print("nb -1 in train predicted : ",len(np.where(yhat_train == -1)[0]))
         print("nb 1 in train predicted : ",len(np.where(yhat_train == 1)[0]))
         print("nb -1 in test predicted : ",len(np.where(yhat_test == -1)[0]))
         print("nb 1 in test predicted : ",len(np.where(yhat_test == 1)[0]))
-        
+        """
         res_test[tag] = f1_score(y_test,yhat_test)
         res_train[tag] = f1_score(y_train,yhat_train)
         print("train",res_train[tag])
