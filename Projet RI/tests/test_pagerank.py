@@ -24,17 +24,10 @@ col1 = c.QueryParser.parse("../data/"+base+"/"+base+".qry", "../data/"+base+"/"+
 
 
 index = c.IndexerSimple(col0)
-
 q = pretraitement_requete(col1['16'].text)
-
 weighter = w.Weighter1(index)
-
 model_V = m.Vectoriel(index,weighter,False)
-
 
 V = pr.sous_graph(model_V, q, 10, 30)
 rank1 = pr.page_ranking(model_V, q, 10, 30, 0.85, epsilon = 1e-5)
 rank2 = pr.page_ranking_dict(model_V, q, 10, 30, 0.85, epsilon = 1e-5)
-
-
-#print(EvalIRModel.eval(metr.Précision,model_V ,col1,[5]))

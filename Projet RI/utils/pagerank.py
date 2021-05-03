@@ -18,6 +18,12 @@ def sous_graph(model, query, n, k):
     return V
     
 def page_ranking(model, query, n, k,  d, nbiter_max = 100, epsilon = 1e-100):
+    """
+    entrées:
+        k : nombre de documents aléatoire à prendre
+        n : nombre de documents à considérer
+        d : probabilité
+    """
     S = sous_graph(model, query, n, k)
     Pi = np.ones(len(S))*(1/len(S))
     s = list(S)
@@ -44,7 +50,6 @@ def page_ranking(model, query, n, k,  d, nbiter_max = 100, epsilon = 1e-100):
             break
         
     sort = np.flip(np.argsort(Pi))
-    print(Pi)
     return np.array(s)[sort]
 
 

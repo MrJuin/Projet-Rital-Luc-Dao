@@ -56,6 +56,8 @@ print(np.unique(res,return_counts=True))
 res = clf.predict(X_train)
 res2 = Postprocessing.post_major(res, fen_size = 3)
 
+res3 = Postprocessing.post_logic(res)
+
 print(np.sum(np.array(y_train) == np.ones(len(y_train)))/len(res2))
 
 #%%

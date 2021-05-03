@@ -39,7 +39,12 @@ class Postprocessing:
                 else:
                     tmp = []; tmp2 = []
             return cpt[0], cpt[1]
+        
         p1, p2 = pb_sec(res)
         for i in range(len(p1)):
-            res[p2[i]] = len(p1[i])*[p1[i][0]]
+            if len(p2[i])%2 == 1:
+                res[p2[i]] = len(p1[i])*[p1[i][0]]
+            else:
+                res[p2[i][:len(p2[i])//2]] = (len(p1[i])//2)*[p1[i][0]]
+                res[p2[i][len(p2[i])//2:]] = (len(p1[i])//2)*[p1[i][-1]]
         return res

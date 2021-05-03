@@ -8,10 +8,6 @@ import spacy
 from nltk.stem.snowball import FrenchStemmer
 
 
-
-
-
-
 class Preprocessing:
     token_pattern = r"(?u)\b\w\w+\b|\S+"
     tokenizer = CountVectorizer(lowercase = False,token_pattern = token_pattern).build_tokenizer()

@@ -33,6 +33,15 @@ Nous avons aussi réalisé un bonus en implémentant un test de significativité
 Le fichier test_metriques.py permet de tester les différents algorithmes mis en oeuvre.   
 De plus nous avons testé les résultats des métriques dans le fichier test_metriques_results.py.  
 ## TME4-Algorithme de PageRank
+Les modèles sont dans les fichiers pagerank.py, deux pageranks sont disponibles, le premier utilisant une 
+matrice le second n'utilisant que des dictionnaires. La seconde méthode est plus lente que la première mais à 
+pour avantage de ne pas représenter en mémoire les non-liens entre les documents (à postériorie il aurait mieux
+fallut utiliser une sparce-matrix).
+Les deux techniques renvoies globalement les mêmes documents (les 10 premiers documents sont les mêmes mais pas 
+forcement dans le même ordre). Cette différence peut s'expliquer par le faite que la méthode matricielle 
+est plus stable, mathématiquement, que la méthode avec les dictionnaires.
+
+
 ## Répartition du travail
 TME1-Indexation Code : Luc STERKERS - Dao THAUVIN   
 TME1-Indexation Tests : Dao THAUVIN   
