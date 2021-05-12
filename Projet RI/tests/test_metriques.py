@@ -67,10 +67,11 @@ if __name__ == "__main__":
     '''
         Signicativité
     '''
-    '''
+    
     first_model = model_V
     second_model = model_L 
     param = [5]
-    
-    print(EvalIRModel.significativité(95,metr.Précision_moyenne,first_model,second_model,col1,param))
-    '''
+    print("significativement identique (modele vectoriel - modele Langue) : ")
+    print(EvalIRModel.significativité(15,metr.NDCG,first_model,second_model,col1,param))
+    print("significativement identique (modele vectoriel - modele vectoriel) : ")
+    print(EvalIRModel.significativité(15,metr.NDCG,first_model,first_model,col1,param))

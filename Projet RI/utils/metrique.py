@@ -9,7 +9,7 @@ Created on Thu Feb 18 14:56:40 2021
 import utils.TextRepresenter as tr
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import norm
+import scipy.stats as stat
 
 class EvalMesure:
     def evalQuery(liste, query, args):
@@ -29,7 +29,7 @@ class EvalIRModel:
     def eval(mesure, model, col_q, args = None):
         ps = tr.PorterStemmer()
         res = list(map(lambda query: EvalIRModel.eval_query(mesure,model,query,ps,args),col_q.values()))
-        return np.mean(res), np.std(res)
+        return np.mean(res), np.std(res,ddof = 1)
     
     # affiche le graphe de précision interpolée pour nb query de col_q
     def precision_interpolée_graph(model,col_q,nb=0):
@@ -60,18 +60,23 @@ class EvalIRModel:
             plt.title("Precision Interpolée pour la requête "+query.id)
             plt.plot(x,y)
             
-    def significativité(p_value, mesure, model, model_test, col_q, args):
+    def significativité(alpha, mesure, model, model_test, col_q, args):
         '''
+            T-Test
             Renvoie Faux si les modeles sont différents, Vrai sinon
+            alpha entre 0 et 100
         '''
+        s = len(col_q)
         m, std = EvalIRModel.eval(mesure, model, col_q, args)
         m_test, std_test = EvalIRModel.eval(mesure, model_test, col_q, args)
-
-        alpha = norm.ppf(p_value)
-        alpha = alpha*(std / np.sqrt(len(col_q)))
-        if m_test >  std + alpha or m_test <  std - alpha:
-            return False
-        return True
+        # print(m_test,m,std_test,std)
+        t = (m_test-m)/(np.sqrt((std/np.sqrt(s))**2 + (std_test/np.sqrt(s))**2))
+        # print(t)
+        p = stat.t.cdf(np.abs(t),(s - 1)*2)
+        cv = stat.t.ppf(1 - alpha/100, (s - 1) * 2)
+        # print(p, (1 - alpha/100), cv)
+        if np.abs(t) > cv: return False
+        else: return True
         
 
 class Précision(EvalMesure):
