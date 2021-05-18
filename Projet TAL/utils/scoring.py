@@ -5,7 +5,7 @@ import itertools
 import collections
 from sklearn.metrics import f1_score
 from sklearn import svm
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_validate
 from utils.preprocessing import Preprocessing
 from sklearn.feature_extraction.text import CountVectorizer
 import pickle
@@ -34,7 +34,7 @@ def get_vectorizer(current_params):
     vectorizer = Vectorizer(preprocessor = f,lowercase=False,
                                 token_pattern = Preprocessing.token_pattern, 
                                 binary = current_params.get("binary",False), 
-                                max_df = current_params.get("max_df",1),
+                                max_df = current_params.get("max_df",1.),
                                 min_df = current_params.get("min_df",1),
                                 ngram_range = current_params.get("ngram_range",(1,1)),
                                 max_features = current_params.get("max_features",None))
@@ -52,7 +52,7 @@ def get_classifieur(current_params,datax,datay):
         return clf_class(class_weight = current_params.get("class_weight",None), max_iter = nb_iter)
     
 
-def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilibrage_train = False,test_size=0.2, stratified = True):
+def gridSearch(datax,datay,params,stock = False,stock_name = "tmp",equilibrage_test = False,equilibrage_train = False,test_size=0.2, stratified = True, cross_validation = False):
     '''
     Parameters
     ----------
@@ -64,8 +64,20 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         Classifieur à utiliser.
     params
         Dictionnaire des parametres.
-    equilibre 
+    stock
+        stockage du résultat dans un fichier
+    stock_name
+        Nom du fichier où l'on stock les résultats de test et train (on ajoute _test ou _train à la fin)
+    equilibrage_test
         Si vrai équilibre les données en test
+    equilibrage_train
+        Si vrai équilibre les données en train
+    test_size
+        Taille de l'ensemble de test
+    stratified
+        Permet d'obtenir une séparation test/train avec meme proportion des classes que les données originales 
+    cross_validation
+        Permet l'utilisation d'une cross validation (on ignore alors les équilibrages)
     Returns
     -------
     res_train 
@@ -74,6 +86,8 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         Dictionnaire des F1-score en train en fonction des différents parametres..
 
     '''
+    if cross_validation:
+        print("nb_fold:",int(1/test_size))
     datay = np.array(datay)
     el = params.keys()
  
@@ -93,33 +107,39 @@ def gridSearch(datax,datay,params,stock = False,equilibrage_test = False,equilib
         vectorizer = get_vectorizer(current_params)
         
         X = vectorizer.fit_transform(datax)
-        X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=test_size, stratify = datay if stratified else None) 
+        
+        if cross_validation:
+            res = cross_validate(clf,X,datay,cv = int(1/test_size), scoring = "f1", return_train_score=True)
+            res_test[tag] = res["test_score"].mean()
+            res_train[tag] = res["train_score"].mean()
+        else:
+            X_train, X_test, y_train, y_test = train_test_split( X, datay, test_size=test_size, stratify = datay if stratified else None) 
 
-        if equilibrage_test:
-            X_test, y_test = Equilibrage.equilibrate_court(X_test,y_test,f1=1,f2=None)
-        """
-        print("nb -1 in train : ",len(np.where(y_train == -1)[0]))
-        print("nb 1 in train : ",len(np.where(y_train == 1)[0]))
-        print("nb -1 in test : ",len(np.where(y_test == -1)[0]))
-        print("nb 1 in test : ",len(np.where(y_test == 1)[0]))
-        """
-        clf.fit(X_train, y_train)
-        
-        
-        # Application 
-        yhat_train = clf.predict(X_train)
-        yhat_test = clf.predict(X_test)
-        """
-        print("nb -1 in train predicted : ",len(np.where(yhat_train == -1)[0]))
-        print("nb 1 in train predicted : ",len(np.where(yhat_train == 1)[0]))
-        print("nb -1 in test predicted : ",len(np.where(yhat_test == -1)[0]))
-        print("nb 1 in test predicted : ",len(np.where(yhat_test == 1)[0]))
-        """
-        res_test[tag] = f1_score(y_test,yhat_test)
-        res_train[tag] = f1_score(y_train,yhat_train)
+            if equilibrage_test:
+                X_test, y_test = Equilibrage.equilibrate_court(X_test,y_test,f1=1,f2=None)
+            """
+            print("nb -1 in train : ",len(np.where(y_train == -1)[0]))
+            print("nb 1 in train : ",len(np.where(y_train == 1)[0]))
+            print("nb -1 in test : ",len(np.where(y_test == -1)[0]))
+            print("nb 1 in test : ",len(np.where(y_test == 1)[0]))
+            """
+            clf.fit(X_train, y_train)
+            
+            
+            # Application 
+            yhat_train = clf.predict(X_train)
+            yhat_test = clf.predict(X_test)
+            """
+            print("nb -1 in train predicted : ",len(np.where(yhat_train == -1)[0]))
+            print("nb 1 in train predicted : ",len(np.where(yhat_train == 1)[0]))
+            print("nb -1 in test predicted : ",len(np.where(yhat_test == -1)[0]))
+            print("nb 1 in test predicted : ",len(np.where(yhat_test == 1)[0]))
+            """
+            res_test[tag] = f1_score(y_test,yhat_test)
+            res_train[tag] = f1_score(y_train,yhat_train)
         print("train",res_train[tag])
         print("test",res_test[tag])
     if stock:
-        pickle.dump(res_train,open("train","wb"))
-        pickle.dump(res_test,open("test","wb"))
+        pickle.dump(res_train,open(stock_name+"_train","wb"))
+        pickle.dump(res_test,open(stock_name+"_test","wb"))
     return res_train,res_test

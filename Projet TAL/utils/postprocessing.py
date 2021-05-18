@@ -23,6 +23,27 @@ class Postprocessing:
 
         return tmp
     
+    def post_major_lim(res, fen_size = 2, pas = 1):
+        tmp = res.copy()
+        for i in range(fen_size,len(res)-fen_size,pas):
+            for j in range(i-fen_size + 1,i+fen_size + 1):
+                # premier différent
+                if tmp[j] != tmp[j-1]:
+                    break
+            # si on ne trouve aucaun changement, on continue
+            if j == i+fen_size:
+                continue
+            else:
+                print(tmp[i-fen_size:i+fen_size + 1],i-fen_size,j)
+                x, y = np.unique( tmp[j: i+fen_size + 1], return_counts=True)
+                if len(y) == 1 or y[0] == y[1]:
+                    continue
+                tmp[j: i+fen_size + 1] = x[np.argmax(y)]
+                print("res",tmp[i-fen_size:i+fen_size + 1])
+            
+
+        return tmp
+    
     def post_logic(res):
         res = res.copy()
         def pb_sec(res):
