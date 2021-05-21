@@ -33,7 +33,7 @@ params = {
     "stopwords": stop, # set(STOPWORDS)],
     "Vectorizer": TfidfVectorizer,
     "binary": True,
-    "class_weight": [0.7, 1],
+    "class_weight": [0.7,1],
     "max_features": None,
     "ngram_range" : (1,2), # (1,1),
     "max_df" : 0.08, # 0.02
@@ -44,7 +44,7 @@ params = {
 # optimisations plus tards
 params["max_df"]  = 0.08
 params["min_df"] = 3
-params["class_weight"] = [1,1]
+params["class_weight"] = [1,1] 
 
 #%%
 

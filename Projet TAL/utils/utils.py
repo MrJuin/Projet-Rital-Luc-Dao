@@ -37,3 +37,13 @@ class Loader():
             cpt+=1 # chg répertoire = cht classe
             
         return alltxts,labs
+    
+    def load_movies_test(fname):
+        alltxts = []
+        s=codecs.open(fname, 'r','utf-8') # pour régler le codage
+        txt = True
+        while txt:
+            txt = s.readline()
+            alltxts.append(txt)
+
+        return alltxts

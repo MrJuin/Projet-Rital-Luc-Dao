@@ -1,77 +1,134 @@
-from utils.utils         import Loader
-from utils.equilibrage   import Equilibrage
-from utils.utils         import Loader
+# -*- coding: utf-8 -*-
+
+from utils.utils import Loader
+from sklearn.model_selection import train_test_split
 from utils.preprocessing import Preprocessing
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+import sklearn.naive_bayes as nb
+from sklearn import svm
+from sklearn import linear_model as lin
+import numpy as np
+from utils.equilibrage import Equilibrage
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import cross_validate
+from nltk.corpus import stopwords
+from sklearn.model_selection import StratifiedKFold, KFold
+from utils.scoring import get_vectorizer, get_classifieur
+import matplotlib.pyplot as plt
 from utils.postprocessing import Postprocessing
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection         import train_test_split
-from sklearn import linear_model as lin
-from sklearn import svm
-import sklearn.naive_bayes as nb
-
-from wordcloud   import WordCloud
-from nltk.corpus import stopwords
-
-import matplotlib.pyplot as plt
-from time import time
-import spacy
-import numpy as np
-import pickle
 fname = "Data/AFDpresidentutf8/corpus.tache1.learn.utf8"
 alltxts,alllabs = Loader.load_pres(fname)
+alltxts,alllabs = np.array(alltxts), np.array(alllabs)
 
-stop = list(stopwords.words('french')) + ['cet', 'cette', 'là']
+
+stop = list(stopwords.words('french'))
 
 # parametres de la meilleur solution
-stop = list(stopwords.words('french')) + ['cet', 'cette', 'là']
 params = {
-    "lowercase":True,
+    "lowercase":False,
     "punct":True,
-    "marker":True,
-    "number":True,
-    "stemming": Preprocessing.stem,
-    "ligne": None,
-    "strip_accents":True,
-    "stopwords": set(stop)
+    "number":False,
+    "stemming":False, #,Preprocessing.stem],
+    # "ligne": [None,-2,0],
+    "strip_accents":True, # 
+    "stopwords": stop, # set(STOPWORDS)],
+    "Vectorizer": TfidfVectorizer,
+    "binary": True,
+    "class_weight": [0.7, 1],
+    "max_features": None,
+    "ngram_range" : (1,2), # (1,1),
+    "max_df" : 0.08, # 0.02
+    "min_df" : 10,# 5
+    "clf" : nb.MultinomialNB
 }
-f = lambda x: Preprocessing.preprocessing(x,params)
-t = time(); data_x = list(map(f, alltxts)); print("temps 1 :",time()-t)
-vectorizer = CountVectorizer(preprocessor = None,lowercase=False,token_pattern = Preprocessing.token_pattern)
-t = time(); X = vectorizer.fit_transform(data_x) ; print("temps 2 :",time() -t)
 
-# train test split sans équilibrage
-t = time()
-clf = svm.LinearSVC()
-X_train, X_test, y_train, y_test = train_test_split( X, alllabs, test_size=0.4, random_state=0) 
-clf.fit(X_train, y_train)
-print("temps 3:",time() - t)
-
-
-res = clf.predict(X_test)
-print(clf.score(X_test,y_test))
-print(np.unique(res,return_counts=True))
+# optimisations plus tards
+params["class_weight"] = [1, 1]
+params["max_df"]  = 0.08
+params["min_df"] = 10
 
 #%%
-res = clf.predict(X_train)
-res2 = Postprocessing.post_major(res, fen_size = 3)
 
-res3 = Postprocessing.post_logic(res)
+vectorizer = get_vectorizer(params)
 
-print(np.sum(np.array(y_train) == np.ones(len(y_train)))/len(res2))
+X = vectorizer.fit_transform(alltxts)
 
+#%%%
+
+# court
+alltxts_e, alllabs_e = Equilibrage.equilibrate_court(alltxts.reshape(-1,1), alllabs, f1 = 0.4, f2 = 0.45)
+X_e = vectorizer.fit_transform(alltxts_e.reshape(-1))
+
+# long
+# X_e, alllabs_e = Equilibrage.equilibrate_long(X, alllabs, f1 = 0.35, f2 = 0.4)
 #%%
-def pb_sec(res):
-    cpt = [[],[]]; tmp = []; tmp2 = []
-    for i in range(len(res)-1):
-        if res[i] != res[i+1]:
-            tmp += [res[i]]; tmp2 += [i]
-            
-        elif len(tmp) > 1:
-            cpt[0] += [tmp + [res[i]]]
-            cpt[1] += [tmp2 + [i]]
-            
-            tmp = []; tmp2 = []
+# cross validation sans équilibrage en entrainement
+
+ # {1:1,-1:1} # "balanced"
+
+scoring = {'accuracy' : accuracy_score, # make_scorer(accuracy_score), 
+           'precision' : precision_score, #make_scorer(precision_score),
+           'recall' : recall_score, #make_scorer(recall_score), 
+           'f1_score' : f1_score} #make_scorer(f1_score)}
+
+res_cross = dict()
+folds = StratifiedKFold(n_splits = 5, shuffle = False)
+for train, test in folds.split(X_e, alllabs_e):
+    
+    X_train = X_e[train]
+    Y_train = alllabs_e[train]
+    X_test = X_e[test]
+    
+    Y_test = alllabs_e[test]
+    print(np.unique(Y_test,return_counts=True))
+    X_test, Y_test = Equilibrage.equilibrate_court(X_test, Y_test)
+    
+    X_test = X_test[:len(Y_test) - len(Y_test)%20]
+    Y_test = Y_test[:len(Y_test) - len(Y_test)%20]
+
+    plt.show()
+    clf = get_classifieur(params,X_e,alllabs_e)
+    clf.fit(X_train,Y_train)
+    
+    res = clf.predict(X_test)
+    
+    fig,ax = plt.subplots(figsize=(35,100)) 
+    ax.imshow(Y_test.reshape(20,-1),interpolation="nearest")
+
+    fig,ax = plt.subplots(figsize=(35,100)) 
+    ax.imshow(res.reshape(20,-1),interpolation="nearest")
+    
+    # res = Postprocessing.post_major(res, fen_size = 20,pas = 1)
+    # res = Postprocessing.post_logic(res)
+    res = Postprocessing.post_major_lim(res, fen_size = 20, pas = 20)
+    """
+    fen_size = 20 # 6
+    pas = 1
+    res = Postprocessing.post_major(res, fen_size = fen_size,pas = pas)
+    fen_size = 3 # 6
+    pas = 1
+    res = Postprocessing.post_major(res, fen_size = fen_size,pas = pas)
+    """
+    fig,ax = plt.subplots(figsize=(35,100)) 
+    ax.imshow(res.reshape(20,-1),interpolation="nearest")
+    
+    print(len(np.where(res==-1)[0]), " on ", res.shape[0]," except :",len(np.where(Y_test==-1)[0]))
+    for score, element in scoring.items():
+        # print(len(Y_test), len(res))
+        if score != "accuracy":
+            try:
+                res_cross[score] += [element(Y_test,res, zero_division = 0)]
+            except KeyError:
+                res_cross[score] = [element(Y_test,res, zero_division = 0)]
         else:
-            tmp = []; tmp2 = []
-    return cpt[0], cpt[1]
+            try:
+                res_cross[score] += [element(Y_test,res)]
+            except KeyError:
+                res_cross[score] = [element(Y_test,res)]
+    
+"""
+res_cross = cross_validate( clf, X, alllabs, cv=5,scoring=scoring)
+"""
+for score,scores in res_cross.items():
+    print(score,":",np.array(scores).mean())
