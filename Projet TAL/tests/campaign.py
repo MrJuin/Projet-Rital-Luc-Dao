@@ -23,7 +23,7 @@ params = {
     "punct":[False,True],
     # "marker":[False,True],
     "number":[False,True],
-    "stemming":[Preprocessing.stem], #,Preprocessing.stem],
+    "stemming":[Preprocessing.stem_fr], #,Preprocessing.stem],
     # "ligne": [None,-2,0],
     "strip_accents":[False,True], # 
     "stopwords": [stop], # set(STOPWORDS)],

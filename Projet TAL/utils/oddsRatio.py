@@ -81,7 +81,7 @@ class OddsRatioCloud:
         res = transforme(res)
         # utilise frequence des mots dans l'ordre
         wordcloud_base = WordCloud(width = 800, height = 800, 
-                background_color ='white',max_words=200)
+                background_color ='white',max_words=200, stopwords = {}, normalize_plurals=False)
 
         test = wordcloud_base.generate_from_frequencies(res)
         plt.figure(figsize = (8, 8), facecolor = None) 

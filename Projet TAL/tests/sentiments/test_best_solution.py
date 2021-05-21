@@ -14,6 +14,7 @@ from sklearn.model_selection import cross_validate
 from nltk.corpus import stopwords
 from sklearn.model_selection import StratifiedKFold, KFold
 from utils.scoring import get_vectorizer, get_classifieur
+from wordcloud import WordCloud, STOPWORDS
 
 fname = "Data/AFDmovies/movies1000/"
 alltxts,alllabs = Loader.load_movies(fname)
@@ -73,21 +74,22 @@ params = {
     # "number":False,
     "stemming":False, 
     "ligne": None,
-    "stopwords": stop, # set(STOPWORDS)],
+    "stopwords": None, # set(STOPWORDS)],
     "Vectorizer": TfidfVectorizer,
     "max_features": None,
     "ngram_range" : (1,2), # (1,1),
     "max_df" : 1., # 0.02
-    "min_df" : 2,# 5
+    "min_df" : 5,# 5
     "clf" : svm.LinearSVC
 }
 
 # optimisations plus tards
 params["number"] = True
-params["max_features"] = None 
-params["min_df"] = 4
-params["strip_accents"] = True
+params["min_df"] = 7
 params["binary"] = True
+params["strip_accents"] = True
+params["stopwords"] = {"he","it","s","of"}
+
 
 #%%
 
@@ -105,7 +107,7 @@ scoring = {'accuracy' : accuracy_score, # make_scorer(accuracy_score),
            'f1_score' : f1_score} #make_scorer(f1_score)}
 
 res_cross = dict()
-folds = KFold(n_splits = 10, shuffle = True)
+folds = KFold(n_splits = 20, shuffle = True)
 for train, test in folds.split(X, alllabs):
     
     X_train = X[train]
@@ -139,12 +141,28 @@ for score,scores in res_cross.items():
     
 #%%
 argweights = np.argsort(clf.coef_[0])
-
+pos = dict()
+neg = dict()
 print("positifs")
-for x in range(20):
-    print(vectorizer.get_feature_names()[argweights[-x - 1]],clf.coef_[0][argweights[-x - 1]])
+for x in range(200):
+    pos[vectorizer.get_feature_names()[argweights[-x - 1]]] = clf.coef_[0][argweights[-x - 1]]
+    # print(vectorizer.get_feature_names()[argweights[-x - 1]],clf.coef_[0][argweights[-x - 1]])
 print("---------")
 print("negatifs")
-for x in range(20):
-    print(vectorizer.get_feature_names()[argweights[x]],clf.coef_[0][argweights[x]])
+for x in range(200):
+    neg[vectorizer.get_feature_names()[argweights[x]]] = -clf.coef_[0][argweights[x]]
+    # print(vectorizer.get_feature_names()[argweights[x]],clf.coef_[0][argweights[x]])
 
+#%%
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+wordcloud_base = WordCloud(width = 800, height = 800, 
+                background_color ='white',max_words=200, stopwords=[], normalize_plurals=False)
+test = wordcloud_base.generate_from_frequencies(neg)
+plt.figure(figsize = (8, 8), facecolor = None) 
+plt.imshow(test) 
+plt.axis("off") 
+plt.tight_layout(pad = 0) 
+
+plt.show() 

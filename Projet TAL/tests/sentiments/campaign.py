@@ -66,7 +66,7 @@ params = {
     "punct":[False,True],
     # "marker":[False,True],
     # "number":[False,True],
-    "stemming":[False,Preprocessing.stem], #,Preprocessing.stem],
+    "stemming":[False,Preprocessing.stem_eng], #,Preprocessing.stem],
     "ligne": [None,-2,0],
     # "strip_accents":[False,True], # 
     "stopwords": [None,stop], # set(STOPWORDS)],
@@ -80,7 +80,7 @@ params = {
     "clf" : [svm.LinearSVC] # , nb.MultinomialNB,svm.LinearSVC,LogisticRegression] #nb.MultinomialNB,svm.LinearSVC,LogisticRegression]
 }
 
-train,test = sc.gridSearch(alltxts,alllabs,params,stock = True,test_size = 0.1,stratified=False)
+train,test = sc.gridSearch(alltxts,alllabs,params,stock = True,test_size = 0.05,stratified=False, cross_validation=True)
 
 print("Meilleurs résultats en test")
 print(params.keys())

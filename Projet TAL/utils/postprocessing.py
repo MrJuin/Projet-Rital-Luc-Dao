@@ -15,11 +15,34 @@ from nltk.stem.snowball import FrenchStemmer
 
 class Postprocessing:
 
-    def post_major(res, fen_size = 5):
+    def post_major(res, fen_size = 5, pas = 1):
         tmp = res.copy()
-        for i in range(fen_size,len(res)-fen_size):
-            x, y = np.unique( tmp[i-fen_size: i+fen_size + 1], return_counts=True)
-            tmp[i] = x[np.argmax(y)]
+        for i in range(fen_size,len(res), pas):
+            mid = (i-fen_size + i)//2 + 1
+            x, y = np.unique( res[i-fen_size: i + 1], return_counts=True)
+            # print(mid)
+            tmp[mid] = x[np.argmax(y)]
+
+        return tmp
+    
+    def post_major_lim(res, fen_size = 2, pas = 1):
+        tmp = res.copy()
+        for i in range(fen_size,len(res), pas):
+            for j in range(i-fen_size + 1,i + 1):
+                # premier différent
+                if res[j] != res[j-1]:
+                    break
+            # si on ne trouve aucaun changement, on continue
+            if j == i+fen_size:
+                continue
+            else:
+                # print(tmp[i-fen_size:i+fen_size + 1],i-fen_size,j)
+                x, y = np.unique( res[j: i + 1], return_counts=True)
+                if len(y) == 1 or y[0] == y[1]:
+                    continue
+                tmp[j: i + 1] = x[np.argmax(y)]
+                 # print("res",tmp[i-fen_size:i+fen_size + 1])
+            
 
         return tmp
     

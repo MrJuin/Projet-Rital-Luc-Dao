@@ -6,20 +6,24 @@ from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 import spacy
 from nltk.stem.snowball import FrenchStemmer
-
+from nltk.stem.snowball import EnglishStemmer
 
 class Preprocessing:
     token_pattern = r"(?u)\b\w\w+\b|\S+"
     tokenizer = CountVectorizer(lowercase = False,token_pattern = token_pattern).build_tokenizer()
-    stemmer = FrenchStemmer()
+    stemmer_fr = FrenchStemmer()
+    stemmer_eng = EnglishStemmer()
     sp_lem = spacy.load('fr_core_news_md')
     
     
     def lem(x):
         return " ".join([i.lemma_ for i in Preprocessing.sp_lem(x)])
-
-    def stem(x):
-        return " ".join([Preprocessing.stemmer.stem(i) for i in x.split(' ')])
+    
+    def stem_fr(x):
+        return " ".join([Preprocessing.stemmer_fr.stem(i) for i in x.split(' ')])
+    
+    def stem_eng(x):
+        return " ".join([Preprocessing.stemmer_eng.stem(i) for i in x.split(' ')])
 
 
     # ligne : -2 = resumé, ligne = 0 : titre
